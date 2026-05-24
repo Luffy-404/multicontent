@@ -47,3 +47,154 @@ model Article {
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
 }
+
+model SportLeague {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  sport     String
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  matches   Match[]
+  standings Standings[]
+}
+
+model Match {
+  id         String      @id @default(cuid())
+  externalId String?
+  leagueId   String
+  league     SportLeague @relation(fields: [leagueId], references: [id])
+  homeTeam   String
+  awayTeam   String
+  homeLogo   String?
+  awayLogo   String?
+  startTime  DateTime
+  status     String
+  homeScore  Int?
+  awayScore  Int?
+  venue      String?
+  round      String?
+  isFeatured Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([leagueId])
+  @@index([startTime])
+  @@index([status])
+}
+
+model Standings {
+  id           String      @id @default(cuid())
+  leagueId     String
+  league       SportLeague @relation(fields: [leagueId], references: [id])
+  team         String
+  logoUrl      String?
+  played       Int
+  wins         Int
+  draws        Int
+  losses       Int
+  goalsFor     Int
+  goalsAgainst Int
+  points       Int
+  rank         Int
+  updatedAt    DateTime
+
+  @@index([leagueId])
+  @@index([rank])
+  @@unique([leagueId, team])
+}
+
+model UserSportsPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  sport     String[]
+  leagues   String[]
+  teams     String[]
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model DashboardSection {
+  id        String            @id @default(cuid())
+  slug      String            @unique
+  name      String
+  enabled   Boolean           @default(true)
+  position  Int               @default(0)
+  createdAt DateTime          @default(now())
+  widgets   DashboardWidget[]
+}
+
+model DashboardSettings {
+  id              String            @id @default(cuid())
+  slug            String            @unique @default("default")
+  maintenanceMode Boolean           @default(false)
+  refreshMinutes  Int               @default(15)
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  widgets         DashboardWidget[]
+}
+
+model DashboardWidget {
+  id             String            @id @default(cuid())
+  key            String            @unique
+  title          String
+  type           String
+  enabled        Boolean           @default(true)
+  position       Int               @default(0)
+  refreshMinutes Int               @default(15)
+  metadata       Json?
+  sectionId      String
+  settingsId     String
+  section        DashboardSection  @relation(fields: [sectionId], references: [id])
+  settings       DashboardSettings @relation(fields: [settingsId], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([sectionId])
+  @@index([settingsId])
+  @@index([enabled])
+  @@index([position])
+}
+
+model MarketSnapshot {
+  id        String   @id @default(cuid())
+  symbol    String
+  name      String
+  price     Float
+  changePct Float
+  trend     Float[]
+  market    String
+  createdAt DateTime @default(now())
+
+  @@index([symbol])
+  @@index([createdAt])
+}
+
+model WeatherSnapshot {
+  id          String   @id @default(cuid())
+  city        String
+  temperature Float
+  condition   String
+  humidity    Int
+  windKph     Float
+  forecast    Json
+  createdAt   DateTime @default(now())
+
+  @@index([city])
+  @@index([createdAt])
+}
+
+model CryptoSnapshot {
+  id        String   @id @default(cuid())
+  symbol    String
+  name      String
+  price     Float
+  change24h Float
+  volume    Float
+  createdAt DateTime @default(now())
+
+  @@index([symbol])
+  @@index([createdAt])
+}

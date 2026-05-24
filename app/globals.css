@@ -17,7 +17,7 @@ html {
 
 body {
   margin: 0;
-  background: #05070d;
+  background: #050608;
   color: #f8fafc;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   text-rendering: optimizeLegibility;
@@ -33,8 +33,8 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-sora), var(--font-inter), system-ui, sans-serif;
-  letter-spacing: -0.015em;
+  font-family: var(--font-cormorant), Georgia, serif;
+  letter-spacing: 0;
 }
 
 button,
@@ -86,6 +86,15 @@ select {
   }
 }
 
+@keyframes sports-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 .animate-hero-rise {
   animation: hero-rise 700ms ease-out both;
 }
@@ -106,6 +115,10 @@ select {
   animation: aura-pulse 9s ease-in-out infinite;
 }
 
+.sports-ticker {
+  animation: sports-ticker 28s linear infinite;
+}
+
 .bg-home-noise {
   background-image:
     radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.16) 1px, transparent 0),
@@ -117,10 +130,8 @@ select {
   position: relative;
   isolation: isolate;
   background:
-    radial-gradient(circle at 16% 0%, rgba(34, 211, 238, 0.16), transparent 34rem),
-    radial-gradient(circle at 84% 8%, rgba(99, 102, 241, 0.12), transparent 32rem),
-    radial-gradient(circle at 50% 100%, rgba(14, 165, 233, 0.08), transparent 38rem),
-    #05070d;
+    radial-gradient(circle at 50% 0%, rgba(107, 231, 255, 0.055), transparent 42rem),
+    #050608;
 }
 
 .app-atmosphere::before {
@@ -130,9 +141,9 @@ select {
   inset: 0;
   z-index: -2;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.032) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.032) 1px, transparent 1px);
-  background-size: 56px 56px;
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 64px 64px;
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent 78%);
   animation: grid-drift 22s linear infinite;
 }
@@ -143,7 +154,7 @@ select {
   position: fixed;
   inset: 0;
   z-index: -1;
-  opacity: 0.18;
+  opacity: 0.08;
   background-image:
     radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.22) 1px, transparent 0);
   background-size: 20px 20px;
@@ -170,7 +181,7 @@ select {
 }
 
 .cinematic-hover:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   box-shadow:
     0 28px 90px rgba(0, 0, 0, 0.42),
     0 0 42px rgba(34, 211, 238, 0.14);

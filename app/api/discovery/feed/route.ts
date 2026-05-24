@@ -25,15 +25,15 @@ export async function GET(request: NextRequest) {
     const category = getCategoryForPage(page, searchParams.get("category"));
     const discoveryCategories = getDiscoveryCategories([category]);
     const [articles, videos] = await Promise.all([
-      getNews(category, limit + 4),
-      getVideos(category, limit + 4),
+      getNews(category, limit + 4).catch(() => []),
+      getVideos(category, limit + 4).catch(() => []),
     ]);
     const items = await buildTrendingDiscoveryItems(
       articles,
       videos,
       discoveryCategories,
       limit,
-    );
+    ).catch(() => []);
     const response: DiscoveryFeedResponse = {
       items,
       nextPage: items.length > 0 && page < 5 ? page + 1 : null,
