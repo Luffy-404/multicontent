@@ -9,7 +9,9 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
-        heading: ["var(--font-sora)", "Sora", "var(--font-inter)", "system-ui", "sans-serif"],
+        heading: ["var(--font-playfair)", "Playfair Display", "Georgia", "serif"],
+        display: ["var(--font-cormorant)", "Cormorant Garamond", "Georgia", "serif"],
+        tight: ["var(--font-inter-tight)", "Inter Tight", "var(--font-inter)", "system-ui", "sans-serif"],
       },
       colors: {
         ink: {

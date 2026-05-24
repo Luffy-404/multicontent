@@ -29,10 +29,15 @@ export async function GET(req: NextRequest) {
     const query = searchParams.get("q") ?? "technology";
     const maxResults = Math.min(Number(searchParams.get("maxResults") ?? "10"), 50);
 
+    if (!process.env.YOUTUBE_API_BASE_URL || !process.env.YOUTUBE_API_KEY) {
+      console.warn("[GET /api/videos] Missing YouTube configuration");
+      return NextResponse.json({ videos: [], items: [], total: 0 });
+    }
+
     const cacheKey = `videos:${query}:${maxResults}`;
     const cached = cache.get<NormalizedVideo[]>(cacheKey);
     if (cached) {
-      return NextResponse.json({ videos: cached, cached: true });
+      return NextResponse.json({ videos: cached, items: cached, total: cached.length, cached: true });
     }
 
     const url = new URL(`${process.env.YOUTUBE_API_BASE_URL}/search`);
@@ -48,10 +53,7 @@ export async function GET(req: NextRequest) {
     if (!res.ok) {
       const err = await res.json();
       console.error("[GET /api/videos] YouTube API error:", err);
-      return NextResponse.json(
-        { error: "Failed to fetch videos" },
-        { status: res.status }
-      );
+      return NextResponse.json({ videos: [], items: [], total: 0 });
     }
 
     const data = await res.json();
@@ -66,9 +68,9 @@ export async function GET(req: NextRequest) {
 
     cache.set(cacheKey, videos, CACHE_TTL);
 
-    return NextResponse.json({ videos, cached: false });
+    return NextResponse.json({ videos, items: videos, total: videos.length, cached: false });
   } catch (err) {
     console.error("[GET /api/videos]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ videos: [], items: [], total: 0 });
   }
 }

@@ -5,7 +5,18 @@ import type { Video } from "@/components/VideoCard";
 
 type VideosResponse = {
   videos?: Video[];
+  items?: Video[];
+  total?: number;
 };
+
+function emptyResponse<T>() {
+  return {
+    items: [],
+    articles: [],
+    videos: [],
+    total: 0,
+  } as T;
+}
 
 function getBaseUrl() {
   const headerStore = headers();
@@ -28,8 +39,13 @@ async function getJson<T>(path: string): Promise<T> {
     cache: "no-store",
   });
 
+  if (response.status === 401) {
+    return emptyResponse<T>();
+  }
+
   if (!response.ok) {
-    throw new Error(`Failed to fetch ${path}`);
+    console.warn(`Request failed: ${path}`);
+    return emptyResponse<T>();
   }
 
   return response.json() as Promise<T>;
@@ -52,5 +68,5 @@ export async function getVideos(query = "technology", limit?: number) {
   const data = await getJson<VideosResponse>(
     `/api/videos?q=${encodeURIComponent(query)}${maxResults}`,
   );
-  return data.videos ?? [];
+  return data.videos ?? data.items ?? [];
 }

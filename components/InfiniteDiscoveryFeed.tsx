@@ -97,16 +97,16 @@ export function InfiniteDiscoveryFeed({
   }, [category, isLoading, nextPage]);
 
   return (
-    <section className="mt-16 sm:mt-20 lg:mt-24">
-      <div className="mb-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
-          Infinite Feed
-        </p>
-        <h2 className="mt-3 font-heading text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          Keep exploring
-        </h2>
-        <p className="mt-3 max-w-2xl text-base leading-7 text-slate-300 sm:leading-8">
-          A lazy-loaded stream that keeps mixing personalized news and video signals as you scroll.
+    <section className="mt-12 sm:mt-16">
+      <div className="mb-6 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+        <div>
+          <p className="text-xs font-bold uppercase text-[#64E6FF]">Infinite Feed</p>
+          <h2 className="mt-2 font-heading text-3xl font-semibold text-[#F7F8FA]">
+            For your next scroll
+          </h2>
+        </div>
+        <p className="max-w-xl text-sm leading-6 text-[#8B97A8] sm:text-right">
+          Personalized stories and videos keep loading from the existing discovery feed.
         </p>
       </div>
 
@@ -124,7 +124,7 @@ export function InfiniteDiscoveryFeed({
           </p>
         ) : null}
         {!isLoading && nextPage === null ? (
-          <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-center text-sm font-medium text-slate-400">
+          <p className="rounded-[20px] border border-white/[0.06] bg-[#0C1018] p-5 text-center text-sm font-medium text-[#8B97A8]">
             You are caught up for now.
           </p>
         ) : null}
@@ -132,3 +132,5 @@ export function InfiniteDiscoveryFeed({
     </section>
   );
 }
+
+export const InfiniteFeed = InfiniteDiscoveryFeed;
