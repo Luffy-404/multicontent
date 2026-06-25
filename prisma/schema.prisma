@@ -12,6 +12,7 @@ model User {
   name                String
   email               String     @unique
   password            String
+  role                UserRole   @default(EDITOR)
   preferredCategories String[]   @default([])
   createdAt           DateTime   @default(now())
   bookmarks           Bookmark[]
@@ -46,6 +47,36 @@ model Article {
   type        String
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
+}
+
+model Story {
+  id          String      @id @default(cuid())
+  title       String
+  slug        String      @unique
+  excerpt     String
+  content     String
+  cover       String?
+  category    String
+  source      String
+  status      StoryStatus @default(DRAFT)
+  views       Int         @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([category])
+  @@index([status])
+  @@index([updatedAt])
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+}
+
+enum StoryStatus {
+  DRAFT
+  PUBLISHED
 }
 
 model SportLeague {

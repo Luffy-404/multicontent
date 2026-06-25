@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { BookmarkRequest } from "@/lib/bookmarkTypes";
 import { useBookmarks } from "@/hooks/useBookmarks";
+import { captureEvent } from "@/lib/analytics/client";
 
 type BookmarkButtonProps = {
   bookmark: BookmarkRequest;
@@ -54,6 +55,12 @@ export function BookmarkButton({ bookmark, className = "" }: BookmarkButtonProps
         await removeBookmark(savedBookmark.id);
       } else {
         await saveBookmark(bookmark);
+        captureEvent("bookmark_added", {
+          bookmark_type: bookmark.type,
+          article_slug: "articleSlug" in bookmark ? bookmark.articleSlug : undefined,
+          video_id: "videoId" in bookmark ? bookmark.videoId : undefined,
+          source: bookmark.source,
+        });
       }
     } catch {
       // The hook restores optimistic state and exposes a failure message.

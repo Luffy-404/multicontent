@@ -1,8 +1,10 @@
-export type NewsSourceType = "api" | "scraped";
+export type NewsSourceType = "api" | "scraped" | "editorial";
 
 export interface NewsArticle {
+  slug?: string;
   title: string;
   description: string;
+  content?: string;
   image: string | null;
   url: string;
   source?: string;
@@ -20,4 +22,3 @@ export interface NewsResponse {
   };
   articles?: NewsArticle[];
 }
-

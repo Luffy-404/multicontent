@@ -36,6 +36,17 @@ function formatSourceName(source?: string) {
 }
 
 function getArticleBody(article: NewsArticle) {
+  if (article.type === "editorial") {
+    return {
+      heading: "Story",
+      paragraphs: (article.content || article.description)
+        .split(/\n{2,}/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean),
+      note: "This story was published by the MultiContent editorial desk.",
+    };
+  }
+
   if (article.type === "scraped") {
     return {
       heading: "Story Summary",
@@ -216,7 +227,7 @@ export default async function NewsDetailsPage({ params }: NewsDetailsPageProps) 
                 )}
               </div>
 
-              {article.url ? (
+              {article.url && article.type !== "editorial" ? (
                 <a
                   href={article.url}
                   target="_blank"
