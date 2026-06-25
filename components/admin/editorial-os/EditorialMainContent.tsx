@@ -1,18 +1,29 @@
+import { StoryActions } from "@/components/admin/StoryActions";
 import {
-  kpis,
-  performanceSeries,
-  pipeline,
-  recentStories,
-  trendingContent,
-} from "./mockData";
+  BarChart3,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  Newspaper,
+  PenLine,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
+import type {
+  AdminDashboardData,
+  StoryAction,
+  StoryListItem,
+} from "@/lib/editorialTypes";
 
 const toneClass: Record<string, string> = {
   success: "text-emerald-300",
   warning: "text-amber-300",
   danger: "text-red-300",
+  neutral: "text-[color:var(--admin-muted)]",
   successCard: "border-emerald-300/20 bg-emerald-400/10 text-emerald-300",
   warningCard: "border-amber-300/20 bg-amber-400/10 text-amber-300",
   dangerCard: "border-red-300/20 bg-red-400/10 text-red-300",
+  neutralCard: "border-[color:var(--admin-line)] bg-[color:var(--admin-chip)] text-[color:var(--admin-muted)]",
   cyan: "border-cyan-300/40 bg-cyan-400/10 text-cyan-300",
   purple: "border-purple-300/40 bg-purple-400/10 text-purple-300",
   amber: "border-amber-300/40 bg-amber-400/10 text-amber-300",
@@ -20,7 +31,23 @@ const toneClass: Record<string, string> = {
   green: "border-emerald-300/40 bg-emerald-400/10 text-emerald-300",
 };
 
-function Panel({
+const metricIcons: Record<string, LucideIcon> = {
+  "Total Stories": Newspaper,
+  Published: CheckCircle2,
+  Drafts: PenLine,
+  "Story Views": BarChart3,
+  "Top Category": TrendingUp,
+};
+
+type EditorialMainContentProps = {
+  stories: StoryListItem[];
+  dashboard: AdminDashboardData;
+  updateStoryAction: StoryAction;
+  publishStoryAction: StoryAction;
+  deleteStoryAction: StoryAction;
+};
+
+export function Panel({
   children,
   className = "",
   id,
@@ -36,7 +63,7 @@ function Panel({
   );
 }
 
-function SectionTitle({ title, action }: { title: string; action?: string }) {
+export function SectionTitle({ title, action }: { title: string; action?: string }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-[color:var(--admin-line)] px-4 py-3">
       <h2 className="font-tight text-base font-semibold text-[color:var(--admin-strong)]">{title}</h2>
@@ -45,78 +72,132 @@ function SectionTitle({ title, action }: { title: string; action?: string }) {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    Published: "bg-emerald-400/12 text-emerald-300",
-    Review: "bg-amber-400/12 text-amber-300",
-    Scheduled: "bg-cyan-400/12 text-cyan-300",
-    Draft: "bg-[color:var(--admin-chip)] text-[color:var(--admin-muted)]",
+export function EditorialMainContentSkeleton() {
+  return (
+    <main className="min-w-0 flex-1 space-y-4 px-4 py-5 lg:px-5" aria-label="Loading editorial dashboard">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Panel key={index} className="p-4">
+            <div className="h-4 w-24 rounded bg-[color:var(--admin-skeleton)]" />
+            <div className="mt-5 h-8 w-16 rounded bg-[color:var(--admin-skeleton)]" />
+            <div className="mt-3 h-3 w-32 rounded bg-[color:var(--admin-skeleton)]" />
+          </Panel>
+        ))}
+      </div>
+      <Panel className="p-4">
+        <div className="h-5 w-40 rounded bg-[color:var(--admin-skeleton)]" />
+        <div className="mt-6 grid gap-4 md:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="h-28 rounded bg-[color:var(--admin-skeleton)]" />
+          ))}
+        </div>
+      </Panel>
+    </main>
+  );
+}
+
+function StatusBadge({ status }: { status: StoryListItem["status"] }) {
+  const styles: Record<StoryListItem["status"], string> = {
+    PUBLISHED: "bg-emerald-400/12 text-emerald-300",
+    DRAFT: "bg-[color:var(--admin-chip)] text-[color:var(--admin-muted)]",
   };
 
   return (
-    <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${styles[status] ?? styles.Draft}`}>
-      {status}
+    <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${styles[status]}`}>
+      {status === "PUBLISHED" ? "Published" : "Draft"}
     </span>
   );
 }
 
-function Thumbnail({ tone, label }: { tone: string; label: string }) {
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function Thumbnail({ story }: { story: StoryListItem }) {
+  if (story.cover) {
+    return (
+      <div
+        className="h-10 w-16 shrink-0 rounded-md bg-cover bg-center"
+        style={{ backgroundImage: `url(${story.cover})` }}
+        aria-hidden="true"
+      />
+    );
+  }
+
   return (
-    <div className={`relative h-10 w-16 shrink-0 overflow-hidden rounded-md bg-gradient-to-br ${tone}`}>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.55),transparent_28%),linear-gradient(135deg,transparent,rgba(0,0,0,0.35))]" />
+    <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-slate-700/70 to-cyan-400/20">
       <span className="absolute bottom-1 left-1 rounded bg-black/35 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-        {label.slice(0, 2).toUpperCase()}
+        {story.category.slice(0, 2).toUpperCase()}
       </span>
     </div>
   );
 }
 
-function ChartLine({
-  points,
-  color,
-}: {
-  points: string;
-  color: string;
-}) {
+function EmptyStories() {
   return (
-    <polyline
-      points={points}
-      fill="none"
-      stroke={color}
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      vectorEffect="non-scaling-stroke"
-    />
+    <div className="px-4 py-12 text-center">
+      <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-cyan-400/10 text-cyan-300">
+        <FileText className="h-5 w-5" aria-hidden="true" />
+      </div>
+      <p className="font-tight text-lg font-semibold text-[color:var(--admin-strong)]">
+        Start the editorial queue
+      </p>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[color:var(--admin-muted)]">
+        Create a draft, refine it with the desk, then publish when it is ready for the public news feed.
+      </p>
+    </div>
   );
 }
 
-export function EditorialMainContent() {
+export function EditorialMainContent({
+  stories,
+  dashboard,
+  updateStoryAction,
+  publishStoryAction,
+  deleteStoryAction,
+}: EditorialMainContentProps) {
   return (
     <main id="dashboard" className="min-w-0 flex-1 space-y-4 px-4 py-5 lg:px-5">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        {kpis.map((item) => (
-          <Panel key={item.label} className="overflow-hidden p-4">
-            <div className="flex items-start justify-between gap-3">
-              <p className="max-w-[9rem] text-xs leading-5 text-[color:var(--admin-muted)]">{item.label}</p>
-              <span className={`grid h-9 w-9 place-items-center rounded-full border text-xs font-semibold ${toneClass[`${item.tone}Card`]}`}>
-                {item.icon}
-              </span>
-            </div>
-            <p className="mt-3 font-tight text-3xl font-semibold text-[color:var(--admin-strong)]">{item.value}</p>
-            <p className={`mt-2 text-xs font-semibold ${toneClass[item.tone]}`}>{item.trend}</p>
-          </Panel>
-        ))}
+        {dashboard.metrics.map((item) => {
+          const tone = item.tone ?? "neutral";
+
+          return (
+            <Panel key={item.label} className="overflow-hidden p-4">
+              <div className="flex items-start justify-between gap-3">
+                <p className="max-w-[9rem] text-xs leading-5 text-[color:var(--admin-muted)]">{item.label}</p>
+                <span className={`grid h-9 w-9 place-items-center rounded-full border text-xs font-semibold ${toneClass[`${tone}Card`]}`}>
+                  {(() => {
+                    const Icon = metricIcons[item.label] ?? BarChart3;
+                    return <Icon className="h-4 w-4" aria-hidden={true} />;
+                  })()}
+                </span>
+              </div>
+              <p className="mt-3 font-tight text-3xl font-semibold text-[color:var(--admin-strong)]">{item.value}</p>
+              <p className={`mt-2 text-xs font-semibold ${toneClass[tone]}`}>{item.detail}</p>
+            </Panel>
+          );
+        })}
       </div>
 
       <Panel id="pipeline" className="p-4">
-        <h2 className="font-tight text-base font-semibold text-[color:var(--admin-strong)]">
-          Editorial Pipeline
-        </h2>
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-tight text-base font-semibold text-[color:var(--admin-strong)]">
+              Editorial Pipeline
+            </h2>
+            <p className="mt-1 text-xs text-[color:var(--admin-muted)]">Current story movement across the desk.</p>
+          </div>
+        </div>
         <div className="mt-7 grid gap-5 md:grid-cols-5">
-          {pipeline.map((step, index) => (
+          {dashboard.pipeline.map((step, index) => (
             <div key={step.label} className="relative text-center">
-              {index < pipeline.length - 1 ? (
+              {index < dashboard.pipeline.length - 1 ? (
                 <div className="pointer-events-none absolute left-[58%] top-10 hidden h-px w-[84%] bg-[color:var(--admin-line)] md:block" />
               ) : null}
               <div className={`mx-auto grid h-16 w-16 place-items-center rounded-full border text-xl font-semibold ${toneClass[step.tone]}`}>
@@ -132,92 +213,76 @@ export function EditorialMainContent() {
 
       <div className="grid gap-4 xl:grid-cols-[1.45fr_0.8fr]">
         <Panel id="articles" className="overflow-hidden">
-          <SectionTitle title="Recent Stories" action={`View all articles ->`} />
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="text-xs text-[color:var(--admin-muted)]">
-                <tr>
-                  {["Headline", "Source", "Status", "Editor", "Published Time"].map((heading) => (
-                    <th key={heading} className="px-4 py-3 font-medium">{heading}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {recentStories.map((story) => (
-                  <tr key={story.headline} className="border-t border-[color:var(--admin-line)]">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <Thumbnail tone={story.imageTone} label={story.source} />
-                        <span className="max-w-[310px] font-medium text-[color:var(--admin-strong)]">
-                          {story.headline}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-[color:var(--admin-muted)]">{story.source}</td>
-                    <td className="px-4 py-3"><StatusBadge status={story.status} /></td>
-                    <td className="px-4 py-3 text-[color:var(--admin-muted)]">{story.editor}</td>
-                    <td className="px-4 py-3 text-[color:var(--admin-muted)]">{story.time}</td>
+          <SectionTitle title="Recent Stories" action={`${stories.length} total`} />
+          {stories.length === 0 ? (
+            <EmptyStories />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[980px] text-left text-sm">
+                <thead className="bg-[color:var(--admin-card)] text-xs text-[color:var(--admin-muted)]">
+                  <tr>
+                    {["Headline", "Source", "Status", "Category", "Updated", "Actions"].map((heading) => (
+                      <th key={heading} className="px-4 py-3 font-semibold uppercase tracking-[0.12em]">{heading}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {stories.map((story) => (
+                    <tr key={story.id} className="border-t border-[color:var(--admin-line)] transition hover:bg-[color:var(--admin-hover)]/60">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <Thumbnail story={story} />
+                          <div className="min-w-0">
+                            <span className="block max-w-[310px] truncate font-medium text-[color:var(--admin-strong)]">
+                              {story.title}
+                            </span>
+                            <span className="mt-1 block max-w-[310px] truncate text-xs text-[color:var(--admin-muted)]">
+                              /{story.slug}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-[color:var(--admin-muted)]">{story.source}</td>
+                      <td className="px-4 py-4"><StatusBadge status={story.status} /></td>
+                      <td className="px-4 py-4 text-[color:var(--admin-muted)]">{story.category}</td>
+                      <td className="px-4 py-4 text-[color:var(--admin-muted)]">{formatDate(story.updatedAt)}</td>
+                      <td className="px-4 py-4">
+                        <StoryActions
+                          story={story}
+                          updateStoryAction={updateStoryAction}
+                          publishStoryAction={publishStoryAction}
+                          deleteStoryAction={deleteStoryAction}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Panel>
 
         <Panel id="trending" className="overflow-hidden">
-          <SectionTitle title="Trending Content" action={`View all ->`} />
-          <div>
-            {trendingContent.map((item, index) => (
-              <div key={item.title} className="flex gap-3 border-t border-[color:var(--admin-line)] px-4 py-3 first:border-t-0">
-                <span className="pt-1 text-sm font-semibold text-cyan-300">{index + 1}</span>
-                <Thumbnail tone={item.imageTone} label={item.title} />
-                <div className="min-w-0">
-                  <p className="line-clamp-2 text-sm font-medium text-[color:var(--admin-strong)]">{item.title}</p>
-                  <p className="mt-1 text-xs text-[color:var(--admin-muted)]">{item.meta}</p>
+          <SectionTitle title="Top Stories" action="By views" />
+          {dashboard.topStories.length === 0 ? (
+            <p className="px-4 py-8 text-sm text-[color:var(--admin-muted)]">
+              Publish stories to build a performance list.
+            </p>
+          ) : (
+            <div>
+              {dashboard.topStories.map((item, index) => (
+                <div key={item.id} className="flex gap-3 border-t border-[color:var(--admin-line)] px-4 py-3 first:border-t-0">
+                  <span className="pt-1 text-sm font-semibold text-cyan-300">{index + 1}</span>
+                  <div className="min-w-0">
+                    <p className="line-clamp-2 text-sm font-medium text-[color:var(--admin-strong)]">{item.title}</p>
+                    <p className="mt-1 text-xs text-[color:var(--admin-muted)]">{item.category} / {item.views.toLocaleString("en")} views</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Panel>
       </div>
-
-      <Panel id="analytics" className="p-4">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="font-tight text-base font-semibold text-[color:var(--admin-strong)]">
-            Article Performance
-          </h2>
-          <span className="rounded-lg border border-[color:var(--admin-line)] px-3 py-1.5 text-xs text-[color:var(--admin-muted)]">
-            This Week
-          </span>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-5 text-xs text-[color:var(--admin-muted)]">
-          <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-sky-400" />Page Views</span>
-          <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-cyan-300" />Unique Visitors</span>
-          <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-purple-400" />Shares</span>
-        </div>
-        <div className="relative mt-4 h-64 overflow-hidden rounded-lg border border-[color:var(--admin-line)] bg-[color:var(--admin-card)]">
-          <div className="absolute inset-x-0 top-1/4 border-t border-dashed border-[color:var(--admin-line)]" />
-          <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[color:var(--admin-line)]" />
-          <div className="absolute inset-x-0 top-3/4 border-t border-dashed border-[color:var(--admin-line)]" />
-          <svg viewBox="0 0 700 220" className="h-full w-full px-4 py-5" preserveAspectRatio="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="viewsFill" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="rgb(56 189 248)" stopOpacity="0.24" />
-                <stop offset="100%" stopColor="rgb(56 189 248)" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <polygon points="0,130 110,112 225,84 335,104 450,76 565,98 700,82 700,220 0,220" fill="url(#viewsFill)" />
-            <ChartLine points="0,130 110,112 225,84 335,104 450,76 565,98 700,82" color="rgb(56 189 248)" />
-            <ChartLine points="0,166 110,146 225,132 335,140 450,116 565,132 700,124" color="rgb(103 232 249)" />
-            <ChartLine points="0,204 110,202 225,201 335,194 450,184 565,190 700,186" color="rgb(192 132 252)" />
-          </svg>
-          <div className="absolute bottom-3 left-4 right-4 flex justify-between text-xs text-[color:var(--admin-muted)]">
-            {performanceSeries.map((item) => (
-              <span key={item.day}>{item.day}</span>
-            ))}
-          </div>
-        </div>
-      </Panel>
     </main>
   );
 }

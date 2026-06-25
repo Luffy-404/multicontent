@@ -87,8 +87,17 @@ export async function POST(req: NextRequest) {
     });
 
     const token = generateToken({ userId: user.id, email: user.email });
+    const response = NextResponse.json({ user, token }, { status: 201 });
 
-    return NextResponse.json({ user, token }, { status: 201 });
+    response.cookies.set("token", token, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: "lax",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    return response;
   } catch (err) {
     console.error("[POST /api/auth/register]", err);
     const serverError = getRegisterServerError(err);

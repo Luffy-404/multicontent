@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { NewsArticle } from "@/lib/newsTypes";
+import { getPublishedStoryBySlug } from "@/services/editorial/stories";
 
 function toNewsArticle(article: {
   title: string;
@@ -28,5 +29,9 @@ export async function getArticleBySlug(slug: string) {
     where: { slug },
   });
 
-  return article ? toNewsArticle(article) : null;
+  if (article) {
+    return toNewsArticle(article);
+  }
+
+  return getPublishedStoryBySlug(slug);
 }

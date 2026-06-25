@@ -35,7 +35,7 @@ function formatSourceName(source?: string) {
 export function NewsCard({ article }: NewsCardProps) {
   const [hasImageError, setHasImageError] = useState(false);
   const publishedAt = formatPublishedAt(article.publishedAt);
-  const slug = createArticleSlug(article);
+  const slug = article.slug ?? createArticleSlug(article);
   const sourceType = article.type?.toUpperCase();
   const sourceName = formatSourceName(article.source);
   const imageSrc = article.image?.trim() ?? "";

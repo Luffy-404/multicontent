@@ -1,103 +1,110 @@
-import {
-  aiNotifications,
-  editorialActivity,
-  publishingQueue,
-  sourceAlerts,
-} from "./mockData";
+import { Bot, CircleCheck, Clock3, FileClock, Radio, Rss, type LucideIcon } from "lucide-react";
+import type { AdminDashboardData, StoryListItem } from "@/lib/editorialTypes";
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+type EditorialActivityPanelProps = {
+  dashboard: AdminDashboardData;
+  stories: StoryListItem[];
+};
+
+function Panel({
+  title,
+  children,
+  icon: Icon,
+}: {
+  title: string;
+  children: React.ReactNode;
+  icon: LucideIcon;
+}) {
   return (
     <section className="admin-panel overflow-hidden rounded-lg">
       <div className="flex items-center justify-between border-b border-[color:var(--admin-line)] px-4 py-3">
-        <h2 className="font-tight text-sm font-semibold text-[color:var(--admin-strong)]">{title}</h2>
-        <span className="text-xs text-[color:var(--admin-muted)]">View all {"->"}</span>
+        <h2 className="inline-flex items-center gap-2 font-tight text-sm font-semibold text-[color:var(--admin-strong)]">
+          <Icon className="h-4 w-4 text-cyan-300" aria-hidden={true} />
+          {title}
+        </h2>
+        <span className="text-xs text-[color:var(--admin-muted)]">Live</span>
       </div>
       {children}
     </section>
   );
 }
 
-function StatusPill({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    Error: "bg-red-400/12 text-red-300",
-    Warning: "bg-amber-400/12 text-amber-300",
-    Healthy: "bg-emerald-400/12 text-emerald-300",
-  };
-
-  return <span className={`rounded px-2 py-1 text-xs font-semibold ${styles[status]}`}>{status}</span>;
+function Placeholder({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-4 py-5 text-sm leading-6 text-[color:var(--admin-muted)]">
+      {children}
+    </div>
+  );
 }
 
-export function EditorialActivityPanel() {
+export function EditorialActivityPanel({ dashboard, stories }: EditorialActivityPanelProps) {
+  const publishedCount = stories.filter((story) => story.status === "PUBLISHED").length;
+
   return (
     <aside className="space-y-4 px-4 pb-5 lg:sticky lg:top-0 lg:h-screen lg:w-[372px] lg:shrink-0 lg:overflow-y-auto lg:border-l lg:border-[color:var(--admin-line)] lg:py-3">
-      <Panel title="Publishing Queue">
-        <div className="divide-y divide-[color:var(--admin-line)]">
-          {publishingQueue.map((title, index) => (
-            <div key={title} className="flex gap-3 px-4 py-3">
-              <div className="h-12 w-14 shrink-0 rounded-md bg-cyan-400/10 ring-1 ring-cyan-300/10" />
-              <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 text-sm font-medium text-[color:var(--admin-strong)]">{title}</p>
-                <p className="mt-1 text-xs text-[color:var(--admin-muted)]">
-                  {index < 2 ? "Today" : "Tomorrow"}, {index + 9}:00 AM
-                </p>
+      <Panel title="Publishing Queue" icon={FileClock}>
+        {dashboard.publishingQueue.length === 0 ? (
+          <Placeholder>No drafts are waiting. Create a story when the desk is ready to move.</Placeholder>
+        ) : (
+          <div className="divide-y divide-[color:var(--admin-line)]">
+            {dashboard.publishingQueue.map((item, index) => (
+              <div key={item.id ?? item.title} className="flex gap-3 px-4 py-3">
+                <div className="grid h-12 w-14 shrink-0 place-items-center rounded-md bg-cyan-400/10 text-xs font-semibold text-cyan-300 ring-1 ring-cyan-300/10">
+                  <Clock3 className="h-4 w-4" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-sm font-medium text-[color:var(--admin-strong)]">{item.title}</p>
+                  <p className="mt-1 text-xs text-[color:var(--admin-muted)]">{item.owner}</p>
+                </div>
+                <span className="self-center rounded-full border border-[color:var(--admin-line)] px-2 py-1 text-[11px] text-[color:var(--admin-muted)]">
+                  {item.status}
+                </span>
               </div>
-              <span className="self-center rounded-full border border-[color:var(--admin-line)] px-2 py-1 text-[11px] text-[color:var(--admin-muted)]">
-                Scheduled
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
+        )}
+      </Panel>
+
+      <Panel title="Recent Editorial Activity" icon={Radio}>
+        {dashboard.recentActivity.length === 0 ? (
+          <Placeholder>Story edits and publishing activity will appear here.</Placeholder>
+        ) : (
+          <div className="divide-y divide-[color:var(--admin-line)]">
+            {dashboard.recentActivity.map((item) => (
+              <div key={`${item.detail}-${item.time}`} className="flex gap-3 px-4 py-3">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-cyan-400/10 text-xs font-semibold text-cyan-300">
+                  <CircleCheck className="h-4 w-4" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-[color:var(--admin-muted)]">
+                    <span className="font-medium text-[color:var(--admin-strong)]">{item.title}</span>
+                  </p>
+                  <p className="truncate text-xs text-[color:var(--admin-muted)]">{item.detail}</p>
+                </div>
+                <span className="shrink-0 text-xs text-[color:var(--admin-faint)]">{item.time}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
+
+      <Panel title="Public News Status" icon={CircleCheck}>
+        <div className="px-4 py-5">
+          <p className="font-tight text-3xl font-semibold text-[color:var(--admin-strong)]">
+            {publishedCount}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-[color:var(--admin-muted)]">
+            Published editorial stories currently eligible for /news.
+          </p>
         </div>
       </Panel>
 
-      <Panel title="Recent Editorial Activity">
-        <div className="divide-y divide-[color:var(--admin-line)]">
-          {editorialActivity.map((item) => (
-            <div key={`${item.person}-${item.time}`} className="flex gap-3 px-4 py-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-cyan-400/10 text-xs font-semibold text-cyan-300">
-                {item.person.slice(0, 1)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-[color:var(--admin-muted)]">
-                  <span className="font-medium text-[color:var(--admin-strong)]">{item.person}</span>{" "}
-                  {item.action}
-                </p>
-                <p className="truncate text-xs text-[color:var(--admin-muted)]">{item.story}</p>
-              </div>
-              <span className="shrink-0 text-xs text-[color:var(--admin-faint)]">{item.time}</span>
-            </div>
-          ))}
-        </div>
+      <Panel title="Source Health" icon={Rss}>
+        <Placeholder>Source controls are coming soon. Current publishing tools do not modify external feeds.</Placeholder>
       </Panel>
 
-      <Panel title="Source Health Alerts">
-        <div className="divide-y divide-[color:var(--admin-line)]">
-          {sourceAlerts.map((alert) => (
-            <div key={alert.source} className="flex items-center gap-3 px-4 py-3">
-              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[color:var(--admin-line)] text-xs text-[color:var(--admin-muted)]">
-                S
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-[color:var(--admin-strong)]">{alert.source}</p>
-                <p className="truncate text-xs text-[color:var(--admin-muted)]">{alert.detail}</p>
-              </div>
-              <StatusPill status={alert.status} />
-            </div>
-          ))}
-        </div>
-      </Panel>
-
-      <Panel title="AI Review Notifications">
-        <div className="divide-y divide-[color:var(--admin-line)]">
-          {aiNotifications.map((item) => (
-            <div key={item.label} className="flex items-center gap-3 px-4 py-3">
-              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-purple-400/10 text-xs font-semibold text-purple-300">
-                AI
-              </div>
-              <p className="min-w-0 flex-1 truncate text-sm text-[color:var(--admin-strong)]">{item.label}</p>
-              <span className="text-xs text-[color:var(--admin-muted)]">{item.area}</span>
-            </div>
-          ))}
-        </div>
+      <Panel title="AI Review Notifications" icon={Bot}>
+        <Placeholder>AI review is coming soon. The active workflow is editor-led story creation and publishing.</Placeholder>
       </Panel>
     </aside>
   );

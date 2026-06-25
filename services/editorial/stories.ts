@@ -1,57 +1,16 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { captureServerEvent } from "@/lib/analytics/server";
 import type { StoryListItem, StoryStatus } from "@/lib/editorialTypes";
-
-const fallbackStories: StoryListItem[] = [
-  {
-    id: "story-briefing",
-    title: "Morning brief: policy, markets, and sport shape the day",
-    slug: "morning-brief-policy-markets-sport",
-    excerpt: "A compact editorial briefing for the homepage lead package.",
-    cover: "",
-    category: "Briefing",
-    source: "Editorial Desk",
-    status: "PUBLISHED",
-    views: 24810,
-    publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 22).toISOString(),
-  },
-  {
-    id: "story-climate",
-    title: "Cities prepare new heat response plans before summer",
-    slug: "cities-heat-response-plans",
-    excerpt: "An operations-led story moving from feeds into the features queue.",
-    cover: "",
-    category: "World",
-    source: "Wire Review",
-    status: "DRAFT",
-    views: 9320,
-    publishedAt: null,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-  },
-  {
-    id: "story-sports",
-    title: "Weekend fixtures lift sports traffic across live modules",
-    slug: "weekend-fixtures-sports-traffic",
-    excerpt: "Sports Center candidates for the next homepage rotation.",
-    cover: "",
-    category: "Sports",
-    source: "Sports Desk",
-    status: "PUBLISHED",
-    views: 18440,
-    publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 10).toISOString(),
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 16).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 66).toISOString(),
-  },
-];
+import type { NewsArticle } from "@/lib/newsTypes";
 
 function toStoryListItem(story: {
   id: string;
   title: string;
   slug: string;
   excerpt: string;
+  content: string;
   cover: string | null;
   category: string;
   source: string;
@@ -66,6 +25,21 @@ function toStoryListItem(story: {
     publishedAt: story.publishedAt?.toISOString() ?? null,
     createdAt: story.createdAt.toISOString(),
     updatedAt: story.updatedAt.toISOString(),
+  };
+}
+
+function storyToNewsArticle(story: StoryListItem): NewsArticle {
+  return {
+    slug: story.slug,
+    title: story.title,
+    description: story.excerpt,
+    content: story.content,
+    image: story.cover ?? null,
+    url: `/news/${story.slug}`,
+    source: story.source,
+    category: story.category,
+    type: "editorial",
+    publishedAt: story.publishedAt ?? story.updatedAt,
   };
 }
 
@@ -85,68 +59,209 @@ function getString(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-export async function getRecentStories(limit = 8): Promise<StoryListItem[]> {
-  try {
-    const stories = await prisma.story.findMany({
-      take: limit,
-      orderBy: { updatedAt: "desc" },
-    });
-
-    if (stories.length === 0) {
-      return fallbackStories.slice(0, limit);
-    }
-
-    return stories.map(toStoryListItem);
-  } catch (error) {
-    console.error("[editorial/stories] using fallback stories", error);
-    return fallbackStories.slice(0, limit);
-  }
-}
-
-export async function createStoryAction(formData: FormData) {
-  "use server";
-
-  const intent = getString(formData, "intent");
+function getStoryInput(formData: FormData) {
   const title = getString(formData, "title");
   const slug = createSlug(getString(formData, "slug") || title);
   const category = getString(formData, "category") || "General";
   const cover = getString(formData, "cover");
   const excerpt = getString(formData, "excerpt");
   const content = getString(formData, "content");
+
+  if (!title || !slug || !excerpt || !content) {
+    throw new Error("Title, slug, excerpt, and body are required.");
+  }
+
+  return {
+    title,
+    slug,
+    category,
+    cover: cover || null,
+    excerpt,
+    content,
+  };
+}
+
+async function assertAdmin() {
+  const user = await getCurrentUser();
+
+  if (user?.role !== "ADMIN") {
+    throw new Error("Admin access required.");
+  }
+
+  return user;
+}
+
+function revalidateStoryPaths(slug?: string) {
+  revalidatePath("/dashboard/admin");
+  revalidatePath("/news");
+
+  if (slug) {
+    revalidatePath(`/news/${slug}`);
+  }
+}
+
+export async function getStories(limit = 24): Promise<StoryListItem[]> {
+  const stories = await prisma.story.findMany({
+    take: limit,
+    orderBy: [{ updatedAt: "desc" }],
+  });
+
+  return stories.map(toStoryListItem);
+}
+
+export async function getPublishedStoryArticles(limit = 12): Promise<NewsArticle[]> {
+  const stories = await prisma.story.findMany({
+    where: { status: "PUBLISHED" },
+    take: limit,
+    orderBy: [{ publishedAt: "desc" }, { updatedAt: "desc" }],
+  });
+
+  return stories.map(toStoryListItem).map(storyToNewsArticle);
+}
+
+export async function getPublishedStoryBySlug(slug: string): Promise<NewsArticle | null> {
+  const story = await prisma.story.findFirst({
+    where: {
+      slug,
+      status: "PUBLISHED",
+    },
+  });
+
+  return story ? storyToNewsArticle(toStoryListItem(story)) : null;
+}
+
+export async function createStoryAction(formData: FormData) {
+  "use server";
+
+  const user = await assertAdmin();
+  const intent = getString(formData, "intent");
   const status: StoryStatus = intent === "publish" ? "PUBLISHED" : "DRAFT";
+  const input = getStoryInput(formData);
+  const existing = await prisma.story.findUnique({
+    where: { slug: input.slug },
+    select: { id: true },
+  });
 
-  if (!title || !excerpt || !content) {
-    return;
+  if (existing) {
+    throw new Error("A story with this slug already exists.");
   }
 
-  try {
-    await prisma.story.upsert({
-      where: { slug },
-      create: {
-        title,
-        slug,
-        category,
-        cover,
-        excerpt,
-        content,
-        source: "Manual",
-        status,
-        publishedAt: status === "PUBLISHED" ? new Date() : null,
-      },
-      update: {
-        title,
-        category,
-        cover,
-        excerpt,
-        content,
-        source: "Manual",
-        status,
-        publishedAt: status === "PUBLISHED" ? new Date() : null,
-      },
+  const story = await prisma.story.create({
+    data: {
+      ...input,
+      source: "Editorial Desk",
+      status,
+      publishedAt: status === "PUBLISHED" ? new Date() : null,
+    },
+  });
+
+  captureServerEvent("story_created", user.id, {
+    story_id: story.id,
+    story_slug: story.slug,
+    story_status: story.status,
+    category: story.category,
+  });
+
+  if (story.status === "PUBLISHED") {
+    captureServerEvent("story_published", user.id, {
+      story_id: story.id,
+      story_slug: story.slug,
+      category: story.category,
     });
-
-    revalidatePath("/dashboard/admin");
-  } catch (error) {
-    console.error("[editorial/stories] create failed", error);
   }
+
+  revalidateStoryPaths(input.slug);
+}
+
+export async function updateStoryAction(formData: FormData) {
+  "use server";
+
+  await assertAdmin();
+  const id = getString(formData, "id");
+  const input = getStoryInput(formData);
+
+  if (!id) {
+    throw new Error("Story id is required.");
+  }
+
+  const current = await prisma.story.findUnique({
+    where: { id },
+    select: { slug: true, status: true, publishedAt: true },
+  });
+
+  if (!current) {
+    throw new Error("Story not found.");
+  }
+
+  const slugOwner = await prisma.story.findUnique({
+    where: { slug: input.slug },
+    select: { id: true },
+  });
+
+  if (slugOwner && slugOwner.id !== id) {
+    throw new Error("A story with this slug already exists.");
+  }
+
+  await prisma.story.update({
+    where: { id },
+    data: {
+      ...input,
+      publishedAt:
+        current.status === "PUBLISHED" && !current.publishedAt
+          ? new Date()
+          : current.publishedAt,
+    },
+  });
+
+  revalidateStoryPaths(current.slug);
+  revalidateStoryPaths(input.slug);
+}
+
+export async function publishStoryAction(formData: FormData) {
+  "use server";
+
+  const user = await assertAdmin();
+  const id = getString(formData, "id");
+  const nextStatus = getString(formData, "status") === "DRAFT" ? "DRAFT" : "PUBLISHED";
+
+  if (!id) {
+    throw new Error("Story id is required.");
+  }
+
+  const story = await prisma.story.update({
+    where: { id },
+    data: {
+      status: nextStatus,
+      publishedAt: nextStatus === "PUBLISHED" ? new Date() : null,
+    },
+    select: { id: true, slug: true, category: true, status: true },
+  });
+
+  if (story.status === "PUBLISHED") {
+    captureServerEvent("story_published", user.id, {
+      story_id: story.id,
+      story_slug: story.slug,
+      category: story.category,
+    });
+  }
+
+  revalidateStoryPaths(story.slug);
+}
+
+export async function deleteStoryAction(formData: FormData) {
+  "use server";
+
+  await assertAdmin();
+  const id = getString(formData, "id");
+
+  if (!id) {
+    throw new Error("Story id is required.");
+  }
+
+  const story = await prisma.story.delete({
+    where: { id },
+    select: { slug: true },
+  });
+
+  revalidateStoryPaths(story.slug);
 }

@@ -6,6 +6,7 @@ import { CategoryTabs } from "@/components/CategoryTabs";
 import { NewsCard } from "@/components/NewsCard";
 import { VideoCard } from "@/components/VideoCard";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { captureEvent } from "@/lib/analytics/client";
 import { SUPPORTED_CATEGORIES, isCategory, type Category } from "@/lib/categoryTypes";
 import type { SearchResponse } from "@/lib/searchTypes";
 
@@ -78,7 +79,19 @@ export function SearchExperience() {
 
         return response.json() as Promise<SearchResponse>;
       })
-      .then(setResults)
+      .then((data) => {
+        setResults(data);
+
+        if (data.query || data.category !== "All") {
+          captureEvent("search_performed", {
+            query: data.query,
+            category: data.category,
+            result_count: data.total,
+            article_count: data.articles.length,
+            video_count: data.videos.length,
+          });
+        }
+      })
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;

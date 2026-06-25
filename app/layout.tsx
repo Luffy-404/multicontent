@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter, Inter_Tight, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { AppShell } from "@/components/AppShell";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { PostHogProvider } from "@/components/PostHogProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -42,11 +44,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${interTight.variable} ${playfair.variable} ${cormorant.variable} min-h-screen bg-[#050608] font-sans text-slate-50 antialiased`}>
-        <div className="app-atmosphere flex min-h-screen flex-col">
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
+        <PostHogProvider>
+          <AppShell navbar={<Navbar />} footer={<Footer />}>
+            {children}
+          </AppShell>
+        </PostHogProvider>
       </body>
     </html>
   );
