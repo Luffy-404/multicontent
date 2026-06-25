@@ -5,6 +5,44 @@
 :root {
   color-scheme: dark;
   --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --admin-bg: #07080a;
+  --admin-panel: #101114;
+  --admin-card: #15171b;
+  --admin-hover: #1c2026;
+  --admin-chip: #20242b;
+  --admin-line: rgba(255, 255, 255, 0.1);
+  --admin-text: #e6e2d8;
+  --admin-strong: #fffaf0;
+  --admin-muted: #a6a093;
+  --admin-faint: #69645c;
+  --admin-accent: #b98d56;
+  --admin-accent-soft: rgba(185, 141, 86, 0.48);
+  --admin-success: #7dd3a7;
+  --admin-success-soft: rgba(125, 211, 167, 0.12);
+  --admin-danger: #f2a3a3;
+  --admin-danger-soft: rgba(242, 163, 163, 0.1);
+  --admin-skeleton: rgba(255, 255, 255, 0.08);
+}
+
+.admin-light {
+  color-scheme: light;
+  --admin-bg: #f5f2ea;
+  --admin-panel: #fffdf8;
+  --admin-card: #f4efe5;
+  --admin-hover: #eee7da;
+  --admin-chip: #e8dece;
+  --admin-line: rgba(48, 42, 32, 0.12);
+  --admin-text: #28231d;
+  --admin-strong: #15120f;
+  --admin-muted: #70695e;
+  --admin-faint: #a09688;
+  --admin-accent: #8f6232;
+  --admin-accent-soft: rgba(143, 98, 50, 0.38);
+  --admin-success: #247a51;
+  --admin-success-soft: rgba(36, 122, 81, 0.12);
+  --admin-danger: #a63d3d;
+  --admin-danger-soft: rgba(166, 61, 61, 0.1);
+  --admin-skeleton: rgba(48, 42, 32, 0.08);
 }
 
 * {
@@ -170,6 +208,41 @@ select {
     0 24px 90px rgba(0, 0, 0, 0.34),
     0 0 40px rgba(34, 211, 238, 0.08);
   backdrop-filter: blur(22px);
+}
+
+.admin-surface {
+  background:
+    linear-gradient(180deg, rgba(185, 141, 86, 0.08), transparent 24rem),
+    var(--admin-bg);
+}
+
+.admin-panel {
+  border: 1px solid var(--admin-line);
+  background: var(--admin-panel);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.18);
+}
+
+.admin-input {
+  min-height: 2.75rem;
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--admin-line);
+  background: var(--admin-card);
+  padding: 0 0.875rem;
+  color: var(--admin-strong);
+  outline: none;
+  transition:
+    border-color 180ms var(--ease-premium),
+    background-color 180ms var(--ease-premium);
+}
+
+.admin-input::placeholder {
+  color: var(--admin-faint);
+}
+
+.admin-input:focus {
+  border-color: var(--admin-accent-soft);
+  background: var(--admin-hover);
 }
 
 .cinematic-hover {

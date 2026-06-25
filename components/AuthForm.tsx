@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 
 type AuthFormProps = {
   mode: "login" | "register";
+  redirectTo?: string;
 };
 
 type AuthApiResponse = {
@@ -37,7 +38,15 @@ async function parseAuthResponse(response: Response) {
   return response.json().catch(() => null) as Promise<AuthApiResponse | null>;
 }
 
-export function AuthForm({ mode }: AuthFormProps) {
+function getSafeRedirectPath(value: string | undefined) {
+  if (!value?.startsWith("/") || value.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return value;
+}
+
+export function AuthForm({ mode, redirectTo }: AuthFormProps) {
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -85,7 +94,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         setStatus("success");
         setMessage("Signed in successfully.");
         router.refresh();
-        router.push("/dashboard");
+        router.push(getSafeRedirectPath(redirectTo));
         return;
       }
 

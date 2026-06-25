@@ -62,6 +62,7 @@ export async function getCurrentUser(request?: NextRequest | Request) {
         id: true,
         name: true,
         email: true,
+        role: true,
         preferredCategories: true,
         createdAt: true,
       },

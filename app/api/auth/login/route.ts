@@ -1,12 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { comparePassword, generateToken } from "@/lib/auth";
+import { AuthConfigurationError, comparePassword, generateToken } from "@/lib/auth";
 import { z } from "zod";
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
+
+function getLoginServerError(err: unknown) {
+  if (err instanceof AuthConfigurationError) {
+    return {
+      message: "Authentication is not configured. Set JWT_SECRET and restart the server.",
+      status: 500,
+    };
+  }
+
+  if (err instanceof Prisma.PrismaClientInitializationError) {
+    return {
+      message: "Database connection is unavailable. Check DATABASE_URL and PostgreSQL.",
+      status: 503,
+    };
+  }
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P2022") {
+      return {
+        message: "Database schema is out of sync. Run prisma db push or apply migrations.",
+        status: 503,
+      };
+    }
+
+    return {
+      message: "Database error while signing in.",
+      status: 503,
+    };
+  }
+
+  return {
+    message: "Unable to sign in right now. Please try again.",
+    status: 500,
+  };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +58,11 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = parsed.data;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      select: { id: true, name: true, email: true, password: true },
+    });
+
     if (!user) {
       return NextResponse.json(
         { error: "Invalid credentials" },
@@ -54,6 +94,11 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (err) {
     console.error("[POST /api/auth/login]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const serverError = getLoginServerError(err);
+
+    return NextResponse.json(
+      { error: serverError.message },
+      { status: serverError.status },
+    );
   }
 }
